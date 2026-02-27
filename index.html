@@ -1,0 +1,2008 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time Frame - Gestão de Importação</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .table-container {
+            overflow-x: auto;
+        }
+        .table-container::-webkit-scrollbar {
+            height: 8px;
+        }
+        .table-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        .table-container::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        table th, table td {
+            white-space: nowrap;
+            min-width: 80px;
+        }
+        /* Cabeçalho Fixo */
+        #dataTable thead th {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4);
+        }
+        /* Altura máxima para a tabela com rolagem */
+        .table-container {
+            max-height: 70vh; /* Ocupa 70% da altura da tela */
+            overflow-y: auto;
+            overflow-x: auto;
+        }
+        th.sortable {
+            cursor: pointer;
+            position: relative;
+            padding-right: 25px !important;
+            transition: background-color 0.2s;
+        }
+        th.sortable:hover {
+            background-color: #374151;
+        }
+        th.sortable::after {
+            content: "\f0dc";
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0.4;
+            font-size: 0.7rem;
+        }
+        th.sort-asc::after {
+            content: "\f0de";
+            opacity: 1;
+            color: #fbbf24;
+        }
+        th.sort-desc::after {
+            content: "\f0dd";
+            opacity: 1;
+            color: #fbbf24;
+        }
+        .payment-warning {
+            background-color: #fee2e2;
+            color: #991b1b;
+            animation: pulse-red 2s infinite;
+        }
+        .payment-near {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        @keyframes pulse-red {
+            0% { background-color: #fee2e2; }
+            50% { background-color: #fecaca; }
+            100% { background-color: #fee2e2; }
+        }
+        .modal-overlay {
+            backdrop-filter: blur(4px);
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .status-atracado { background-color: #10b981; color: white; }
+        .status-transbordo { background-color: #f59e0b; color: white; }
+        .status-embarcado { background-color: #3b82f6; color: white; }
+        .status-aguardando { background-color: #6b7280; color: white; }
+        .status-liberado { background-color: #8b5cf6; color: white; }
+        .status-entregue { background-color: #059669; color: white; }
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+        }
+
+        /* Dropdown menu */
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            margin-top: 0.5rem;
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            min-width: 200px;
+            z-index: 100;
+            overflow: hidden;
+        }
+        .dropdown-menu.show {
+            display: block;
+            animation: fadeIn 0.2s ease-out;
+        }
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: #374151;
+            font-size: 0.875rem;
+            transition: background-color 0.15s;
+            cursor: pointer;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+        }
+        .dropdown-item:hover {
+            background-color: #fef3c7;
+        }
+        .dropdown-item.danger {
+            color: #dc2626;
+        }
+        .dropdown-item.danger:hover {
+            background-color: #fee2e2;
+        }
+        .dropdown-divider {
+            height: 1px;
+            background-color: #e5e7eb;
+            margin: 0.25rem 0;
+        }
+
+        /* Embed mode */
+        body.embed-mode {
+            background: transparent;
+        }
+        body.embed-mode #appHeader {
+            display: none;
+        }
+        body.embed-mode .container {
+            max-width: 100% !important;
+        }
+        body.embed-mode #appMain {
+            padding-top: 0.75rem !important;
+            padding-bottom: 0.75rem !important;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Header -->
+    <header id="appHeader" class="bg-gradient-to-r from-yellow-400 to-yellow-600 text-white shadow-lg">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <img src="https://beemesh.pro/logo-central-mesh.png" alt="Central Mesh Logo" class="h-12 w-auto">
+                    <div>
+                        <h1 class="text-2xl font-bold">Time Frame</h1>
+                        <p class="text-yellow-100 text-sm">Gestão de Importação</p>
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="bg-white/20 rounded-lg px-4 py-2 text-sm">
+                        <span>Total: <strong id="totalContainers">0</strong> registros</span>
+                    </div>
+                    <div class="bg-white/20 rounded-lg px-4 py-2 text-sm">
+                        <span>Peso Total: <strong id="totalPeso">0</strong> kg</span>
+                    </div>
+                    <div class="bg-white/20 rounded-lg px-4 py-2 text-sm">
+                        <span>Valor Total: <strong id="totalValor">$0</strong></span>
+                    </div>
+                    <button onclick="openModal()" class="bg-white text-yellow-700 px-4 py-2 rounded-lg font-semibold hover:bg-yellow-50 transition flex items-center gap-2">
+                        <i class="fas fa-plus"></i>
+                        Novo Registro
+                    </button>
+                    
+                    <!-- Dropdown Ações -->
+                    <div class="relative">
+                        <button onclick="toggleActionsMenu()" id="actionsBtn" class="bg-yellow-800 text-white px-4 py-2 rounded-lg font-semibold hover:bg-yellow-900 transition flex items-center gap-2">
+                            <i class="fas fa-cog"></i>
+                            Ações
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </button>
+                        <div id="actionsMenu" class="dropdown-menu">
+                            <button class="dropdown-item" onclick="exportData(); closeActionsMenu();">
+                                <i class="fas fa-file-excel text-green-600"></i>
+                                Exportar CSV
+                            </button>
+                            <button class="dropdown-item" onclick="importData(); closeActionsMenu();">
+                                <i class="fas fa-file-import text-purple-600"></i>
+                                Importar Dados
+                            </button>
+                            <div class="dropdown-divider"></div>
+                            <button class="dropdown-item danger" onclick="openClearModal(); closeActionsMenu();">
+                                <i class="fas fa-trash-alt"></i>
+                                Limpar Tudo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Filters -->
+    <div id="appMain" class="container mx-auto px-4 py-4">
+        <div class="bg-white rounded-xl shadow-md p-4 mb-4">
+            <div class="grid grid-cols-1 gap-4">
+                <!-- Busca -->
+                <div>
+                    <label for="searchInput" class="text-[10px] font-bold text-gray-500 uppercase ml-1 mb-1 block">Busca</label>
+                    <div class="relative">
+                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <path d="M10.5 18.5C14.9183 18.5 18.5 14.9183 18.5 10.5C18.5 6.08172 14.9183 2.5 10.5 2.5C6.08172 2.5 2.5 6.08172 2.5 10.5C2.5 14.9183 6.08172 18.5 10.5 18.5Z" stroke="currentColor" stroke-width="2"/>
+                            <path d="M16.5 16.5L21.5 21.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        <input type="text" id="searchInput" placeholder="Buscar por fornecedor, invoice, BL, container, navio..."
+                            class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none">
+                    </div>
+                </div>
+
+                <!-- Filtros (responsivos) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 items-end">
+                    <div class="flex flex-col">
+                        <label class="text-[10px] font-bold text-gray-500 uppercase ml-1 mb-1">Situação</label>
+                        <select id="filterSituacao" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm bg-white">
+                            <option value="">Todas</option>
+                            <option value="ATRACADO BRASIL">Atracado Brasil</option>
+                            <option value="EM TRANSBORDO">Em Transbordo</option>
+                            <option value="EMBARCADO">Embarcado</option>
+                            <option value="AGUARDANDO EMBARQUE">Aguardando</option>
+                            <option value="LIBERADO">Liberado</option>
+                            <option value="ENTREGUE">Entregue</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col">
+                        <label class="text-[10px] font-bold text-gray-500 uppercase ml-1 mb-1">Fornecedor</label>
+                        <select id="filterFornecedor" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm bg-white">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col">
+                        <label class="text-[10px] font-bold text-gray-500 uppercase ml-1 mb-1">Owner</label>
+                        <select id="filterOwner" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm bg-white">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col">
+                        <label class="text-[10px] font-bold text-gray-500 uppercase ml-1 mb-1">ETD (Início/Fim)</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="date" id="filterEtdStart" class="w-full px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-xs bg-white">
+                            <input type="date" id="filterEtdEnd" class="w-full px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-xs bg-white">
+                        </div>
+                    </div>
+                    <div class="flex flex-col">
+                        <label class="text-[10px] font-bold text-gray-500 uppercase ml-1 mb-1">ETA (Início/Fim)</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="date" id="filterEtaStart" class="w-full px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-xs bg-white">
+                            <input type="date" id="filterEtaEnd" class="w-full px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-xs bg-white">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
+            <div class="bg-white rounded-xl shadow-md p-3 text-center border-l-4 border-green-500">
+                <div class="text-xl font-bold text-green-600" id="statAtracado">0</div>
+                <div class="text-xs text-gray-500">Atracado Brasil</div>
+            </div>
+            <div class="bg-white rounded-xl shadow-md p-3 text-center border-l-4 border-yellow-500">
+                <div class="text-xl font-bold text-yellow-600" id="statTransbordo">0</div>
+                <div class="text-xs text-gray-500">Em Transbordo</div>
+            </div>
+            <div class="bg-white rounded-xl shadow-md p-3 text-center border-l-4 border-blue-500">
+                <div class="text-xl font-bold text-blue-600" id="statEmbarcado">0</div>
+                <div class="text-xs text-gray-500">Embarcado</div>
+            </div>
+            <div class="bg-white rounded-xl shadow-md p-3 text-center border-l-4 border-gray-500">
+                <div class="text-xl font-bold text-gray-600" id="statAguardando">0</div>
+                <div class="text-xs text-gray-500">Aguardando</div>
+            </div>
+            <div class="bg-white rounded-xl shadow-md p-3 text-center border-l-4 border-purple-500">
+                <div class="text-xl font-bold text-purple-600" id="statLiberado">0</div>
+                <div class="text-xs text-gray-500">Liberado</div>
+            </div>
+            <div class="bg-white rounded-xl shadow-md p-3 text-center border-l-4 border-emerald-500">
+                <div class="text-xl font-bold text-emerald-600" id="statEntregue">0</div>
+                <div class="text-xs text-gray-500">Entregue</div>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="bg-white rounded-xl shadow-md overflow-hidden">
+            <div class="table-container">
+                <table class="w-full text-sm" id="dataTable">
+                    <thead class="bg-gray-800 text-white">
+                        <tr>
+                            <th class="px-3 py-3 text-left font-semibold">Ações</th>
+                            <th class="sortable px-3 py-3 text-left font-semibold" onclick="sortTable('fornecedor')">Fornecedor</th>
+                            <th class="sortable px-3 py-3 text-left font-semibold" onclick="sortTable('invoice')">Invoice</th>
+                            <th class="sortable px-3 py-3 text-left font-semibold" onclick="sortTable('bcs')">BCS</th>
+                            <th class="sortable px-3 py-3 text-left font-semibold" onclick="sortTable('montreal')">Montreal</th>
+                            <th class="sortable px-3 py-3 text-left font-semibold" onclick="sortTable('situacao')">Situação</th>
+                            <th class="sortable px-3 py-3 text-right font-semibold" onclick="sortTable('peso')">Peso</th>
+                            <th class="sortable px-3 py-3 text-right font-semibold" onclick="sortTable('gw')">G.W</th>
+                            <th class="sortable px-3 py-3 text-right font-semibold" onclick="sortTable('rolls')">Rolls</th>
+                            <th class="sortable px-3 py-3 text-right font-semibold" onclick="sortTable('valor')">Valor</th>
+                            <th class="sortable px-3 py-3 text-center font-semibold" onclick="sortTable('firstEtd')">1st ETD</th>
+                            <th class="sortable px-3 py-3 text-center font-semibold" onclick="sortTable('etd')">ETD</th>
+                            <th class="px-3 py-3 text-center font-semibold">Dif. ETD</th>
+                            <th class="sortable px-3 py-3 text-center font-semibold" onclick="sortTable('firstEta')">1st ETA</th>
+                            <th class="sortable px-3 py-3 text-center font-semibold" onclick="sortTable('eta')">ETA</th>
+                            <th class="px-3 py-3 text-center font-semibold">Dif. ETA</th>
+                            <th class="px-3 py-3 text-center font-semibold">TT</th>
+                            <th class="sortable px-3 py-3 text-center font-semibold" onclick="sortTable('tracking')">Tracking</th>
+                            <th class="sortable px-3 py-3 text-center font-semibold" onclick="sortTable('freetime')">Freetime</th>
+                            <th class="sortable px-3 py-3 text-left font-semibold" onclick="sortTable('navio')">Navio</th>
+                            <th class="sortable px-3 py-3 text-left font-semibold" onclick="sortTable('transbordo')">Transbordo</th>
+                            <th class="sortable px-3 py-3 text-left font-semibold" onclick="sortTable('owner')">Owner</th>
+                            <th class="sortable px-3 py-3 text-right font-semibold" onclick="sortTable('frete')">Frete</th>
+                            <th class="sortable px-3 py-3 text-left font-semibold" onclick="sortTable('container')">Container</th>
+                            <th class="sortable px-3 py-3 text-left font-semibold" onclick="sortTable('bl')">BL</th>
+                            <th class="sortable px-3 py-3 text-center font-semibold" onclick="sortTable('prazoPagamento')">Prazo Pgto</th>
+                            <th class="sortable px-3 py-3 text-center font-semibold" onclick="sortTable('dataPgtoRealizado')">Data Pgto Realizado</th>
+                            <th class="sortable px-3 py-3 text-center font-semibold" onclick="sortTable('dataNumerario')">Data Numerário</th>
+                            <th class="sortable px-3 py-3 text-right font-semibold" onclick="sortTable('valorNumerario')">Valor Num.</th>
+                            <th class="sortable px-3 py-3 text-center font-semibold" onclick="sortTable('dataPgto')">Data Pgto</th>
+                            <th class="sortable px-3 py-3 text-center font-semibold" onclick="sortTable('subida')">Subida</th>
+                            <th class="sortable px-3 py-3 text-right font-semibold" onclick="sortTable('valorReal')">Valor Real</th>
+                            <th class="sortable px-3 py-3 text-right font-semibold" onclick="sortTable('diferenca')">Diferença</th>
+                            <th class="sortable px-3 py-3 text-left font-semibold" onclick="sortTable('filial')">Filial</th>
+                            <th class="sortable px-3 py-3 text-left font-semibold" onclick="sortTable('nf')">NF</th>
+                            <th class="sortable px-3 py-3 text-left font-semibold" onclick="sortTable('contabilidade')">Contabilidade</th>
+                            <th class="sortable px-3 py-3 text-right font-semibold" onclick="sortTable('proporcao')">Proporção</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody" class="divide-y divide-gray-200">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden bg-white rounded-xl shadow-md p-12 text-center mt-4">
+            <i class="fas fa-box-open text-6xl text-gray-300 mb-4"></i>
+            <h3 class="text-xl font-semibold text-gray-600 mb-2">Nenhum registro encontrado</h3>
+            <p class="text-gray-400 mb-4">Comece adicionando seu primeiro registro ou importe uma planilha</p>
+            <div class="flex gap-3 justify-center">
+                <button onclick="openModal()" class="bg-yellow-600 text-white px-6 py-2 rounded-lg hover:bg-yellow-700 transition">
+                    <i class="fas fa-plus mr-2"></i>Adicionar Registro
+                </button>
+                <button onclick="importData()" class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition">
+                    <i class="fas fa-file-import mr-2"></i>Importar Planilha
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Form -->
+    <div id="modal" class="fixed inset-0 bg-black/50 modal-overlay hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[95vh] overflow-y-auto fade-in">
+            <div class="sticky top-0 bg-white p-4 border-b border-gray-200 flex items-center justify-between z-10">
+                <h2 id="modalTitle" class="text-xl font-bold text-gray-800">Novo Registro</h2>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-2xl">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="containerForm" class="p-6">
+                <input type="hidden" id="recordId">
+                
+                <!-- Seção: Identificação -->
+                <div class="mb-6">
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase mb-3 flex items-center gap-2">
+                        <i class="fas fa-tag"></i> Identificação
+                    </h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Fornecedor *</label>
+                            <input type="text" id="fornecedor" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Invoice *</label>
+                            <input type="text" id="invoice" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">BCS</label>
+                            <input type="text" id="bcs" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Montreal</label>
+                            <input type="text" id="montreal" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seção: Status e Carga -->
+                <div class="mb-6">
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase mb-3 flex items-center gap-2">
+                        <i class="fas fa-boxes"></i> Status e Carga
+                    </h3>
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Situação *</label>
+                            <select id="situacao" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm">
+                                <option value="AGUARDANDO EMBARQUE">Aguardando Embarque</option>
+                                <option value="EMBARCADO">Embarcado</option>
+                                <option value="EM TRANSBORDO">Em Transbordo</option>
+                                <option value="ATRACADO BRASIL">Atracado Brasil</option>
+                                <option value="LIBERADO">Liberado</option>
+                                <option value="ENTREGUE">Entregue</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Peso (kg)</label>
+                            <input type="number" step="0.01" id="peso" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">G.W (kg)</label>
+                            <input type="number" step="0.01" id="gw" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Rolls</label>
+                            <input type="number" id="rolls" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Valor (USD)</label>
+                            <input type="number" step="0.01" id="valor" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seção: Datas e Tracking -->
+                <div class="mb-6">
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase mb-3 flex items-center gap-2">
+                        <i class="fas fa-calendar-alt"></i> Datas e Tracking
+                    </h3>
+                    <div class="grid grid-cols-2 md:grid-cols-6 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">1st ETD</label>
+                            <input type="date" id="firstEtd" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">ETD</label>
+                            <input type="date" id="etd" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">1st ETA</label>
+                            <input type="date" id="firstEta" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">ETA</label>
+                            <input type="date" id="eta" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Tracking</label>
+                            <input type="date" id="tracking" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Freetime (dias)</label>
+                            <input type="number" id="freetime" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seção: Transporte -->
+                <div class="mb-6">
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase mb-3 flex items-center gap-2">
+                        <i class="fas fa-ship"></i> Transporte
+                    </h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Navio</label>
+                            <input type="text" id="navio" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Transbordo</label>
+                            <input type="text" id="transbordo" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Owner</label>
+                            <input type="text" id="owner" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Frete (USD)</label>
+                            <input type="number" step="0.01" id="frete" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 mt-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Container</label>
+                            <input type="text" id="container" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm uppercase">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">BL</label>
+                            <input type="text" id="bl" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seção: Pagamento -->
+                <div class="mb-6">
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase mb-3 flex items-center gap-2">
+                        <i class="fas fa-dollar-sign"></i> Pagamento
+                    </h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Prazo Pagamento</label>
+                            <input type="date" id="prazoPagamento" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Data Pgto Realizado</label>
+                            <input type="date" id="dataPgtoRealizado" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Data Numerário</label>
+                            <input type="date" id="dataNumerario" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Valor Numerário (R$)</label>
+                            <input type="number" step="0.01" id="valorNumerario" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Data Pgto</label>
+                            <input type="date" id="dataPgto" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Subida</label>
+                            <input type="date" id="subida" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Valor Real (R$)</label>
+                            <input type="number" step="0.01" id="valorReal" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Diferença (R$)</label>
+                            <input type="number" step="0.01" id="diferenca" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seção: Outros -->
+                <div class="mb-6">
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase mb-3 flex items-center gap-2">
+                        <i class="fas fa-folder"></i> Outros
+                    </h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Filial</label>
+                            <input type="text" id="filial" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">NF</label>
+                            <input type="text" id="nf" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Contabilidade</label>
+                            <input type="text" id="contabilidade" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Proporção</label>
+                            <input type="number" step="0.01" id="proporcao" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 justify-end pt-4 border-t">
+                    <button type="button" onclick="closeModal()" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-6 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition">
+                        <i class="fas fa-save mr-2"></i>Salvar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="fixed inset-0 bg-black/50 modal-overlay hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md fade-in">
+            <div class="p-6 text-center">
+                <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-trash-alt text-2xl text-red-600"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Confirmar Exclusão</h3>
+                <p class="text-gray-600 mb-6">Tem certeza que deseja excluir este registro?</p>
+                <input type="hidden" id="deleteRecordId">
+                <div class="flex gap-3 justify-center">
+                    <button onclick="closeDeleteModal()" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+                        Cancelar
+                    </button>
+                    <button onclick="confirmDelete()" class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
+                        <i class="fas fa-trash mr-2"></i>Excluir
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clear All Confirmation Modal -->
+    <div id="clearModal" class="fixed inset-0 bg-black/50 modal-overlay hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md fade-in">
+            <div class="p-6 text-center">
+                <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-exclamation-triangle text-2xl text-red-600"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Limpar Todos os Dados</h3>
+                <p class="text-gray-600 mb-2">Tem certeza que deseja excluir <strong>TODOS</strong> os registros?</p>
+                <p class="text-sm text-green-600 mb-6">
+                    <i class="fas fa-check-circle mr-1"></i>
+                    Um backup será gerado automaticamente antes de limpar.
+                </p>
+                <div class="flex gap-3 justify-center">
+                    <button onclick="closeClearModal()" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+                        Cancelar
+                    </button>
+                    <button onclick="confirmClearAll()" class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
+                        <i class="fas fa-trash mr-2"></i>Limpar Tudo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Modal -->
+    <div id="importModal" class="fixed inset-0 bg-black/50 modal-overlay hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl fade-in">
+            <div class="p-4 border-b border-gray-200 flex items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800">Importar Dados</h2>
+                    <p class="text-xs text-gray-500">Cole da planilha, envie Excel ou conecte um Google Sheets</p>
+                </div>
+                <button onclick="closeImportModal()" class="text-gray-400 hover:text-gray-600 text-2xl" aria-label="Fechar">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Tabs -->
+            <div class="px-4 pt-4">
+                <div class="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1">
+                    <button id="importTabPaste" type="button" onclick="setImportTab('paste')" class="px-3 py-2 text-sm rounded-md bg-white shadow-sm text-gray-800 font-semibold">Colar dados</button>
+                    <button id="importTabExcel" type="button" onclick="setImportTab('excel')" class="px-3 py-2 text-sm rounded-md text-gray-600 hover:text-gray-800">Arquivo Excel</button>
+                    <button id="importTabSheet" type="button" onclick="setImportTab('sheet')" class="px-3 py-2 text-sm rounded-md text-gray-600 hover:text-gray-800">Google Sheets (link)</button>
+                </div>
+            </div>
+
+            <div class="p-6 pt-4">
+                <!-- Panel: Paste -->
+                <div id="importPanelPaste" class="space-y-3">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                        <div class="md:col-span-2">
+                            <label class="text-[10px] font-bold text-gray-500 uppercase ml-1 mb-1 block">Dados (copiar/colar com cabeçalho)</label>
+                            <textarea id="importText" rows="10" placeholder="Cole aqui (Ctrl+V)" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm font-mono"></textarea>
+                            <p class="text-xs text-gray-500 mt-1">Suporta células com quebra de linha (entre aspas) sem "perder" colunas.</p>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-gray-500 uppercase ml-1 mb-1 block">Ano base (para datas tipo 25-Nov)</label>
+                            <input id="importBaseYear" type="number" min="2000" max="2100" placeholder="ex.: 2026" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm bg-white" />
+
+                            <label class="mt-3 inline-flex items-center gap-2 text-sm text-gray-700 select-none">
+                                <input id="importReplace" type="checkbox" class="rounded border-gray-300 text-yellow-600 focus:ring-yellow-500">
+                                Substituir registros atuais
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-3 justify-end">
+                        <button type="button" onclick="closeImportModal()" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+                            Cancelar
+                        </button>
+                        <button type="button" onclick="processImport()" class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
+                            <i class="fas fa-file-import mr-2"></i>Importar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Panel: Excel -->
+                <div id="importPanelExcel" class="hidden space-y-4">
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-900">
+                        <p class="font-semibold">📊 Importação de Excel (.xlsx)</p>
+                        <p class="text-xs">Selecione um arquivo Excel (.xlsx) da sua planilha. O cabeçalho deve estar na primeira linha.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-3">
+                        <div>
+                            <label class="text-[10px] font-bold text-gray-500 uppercase ml-1 mb-1 block">Arquivo Excel (.xlsx)</label>
+                            <input id="excelFile" type="file" accept=".xlsx,.xls" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm bg-white" />
+                            <p class="text-xs text-gray-500 mt-1">Formatos aceitos: .xlsx, .xls</p>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-gray-500 uppercase ml-1 mb-1 block">Ano base (para datas tipo 25-Nov)</label>
+                            <input id="excelBaseYear" type="number" min="2000" max="2100" placeholder="ex.: 2026" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm bg-white" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-500 uppercase ml-1 mb-1 block">Prévia (somente leitura)</label>
+                        <textarea id="excelPreview" rows="6" readonly class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-xs font-mono"></textarea>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-3 justify-end">
+                        <button type="button" onclick="closeImportModal()" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+                            Cancelar
+                        </button>
+                        <button type="button" onclick="loadExcelPreview()" class="px-6 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition">
+                            <i class="fas fa-eye mr-2"></i>Visualizar
+                        </button>
+                        <button type="button" onclick="importFromExcel()" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                            <i class="fas fa-file-import mr-2"></i>Importar
+                        </button>
+                    </div>
+
+                    <p class="text-xs text-gray-500">O arquivo permanece no seu computador. Nenhum dado é enviado para servidores.</p>
+                </div>
+
+                <!-- Panel: Google Sheets link -->
+                <div id="importPanelSheet" class="hidden space-y-4">
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-900">
+                        <p class="font-semibold">Requisito:</p>
+                        <p class="text-xs">No Google Sheets: <strong>Arquivo → Publicar na Web</strong> (ou disponibilize para acesso público). Depois cole o link abaixo.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div class="md:col-span-2">
+                            <label class="text-[10px] font-bold text-gray-500 uppercase ml-1 mb-1 block">Link do Google Sheets</label>
+                            <input id="sheetUrl" type="url" placeholder="Cole o link da planilha" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm bg-white" />
+                            <p class="text-xs text-gray-500 mt-1">Aceita links do tipo: docs.google.com/spreadsheets/d/...</p>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-gray-500 uppercase ml-1 mb-1 block">Aba (opcional)</label>
+                            <input id="sheetName" type="text" placeholder="ex.: TimeFrame" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm bg-white" />
+
+                            <label class="text-[10px] font-bold text-gray-500 uppercase ml-1 mb-1 block mt-3">Ano base (opcional)</label>
+                            <input id="sheetBaseYear" type="number" min="2000" max="2100" placeholder="ex.: 2026" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm bg-white" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-500 uppercase ml-1 mb-1 block">Prévia (somente leitura)</label>
+                        <textarea id="sheetPreview" rows="6" readonly class="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-xs font-mono"></textarea>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-3 justify-end">
+                        <button type="button" onclick="closeImportModal()" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+                            Cancelar
+                        </button>
+                        <button type="button" onclick="loadSheetPreview()" class="px-6 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition">
+                            <i class="fas fa-cloud-download-alt mr-2"></i>Carregar
+                        </button>
+                        <button type="button" onclick="importFromSheetLink()" class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
+                            <i class="fas fa-file-import mr-2"></i>Importar
+                        </button>
+                    </div>
+
+                    <p class="text-xs text-gray-500">Se a planilha for restrita, o navegador pode bloquear o acesso. Nesse caso, use a opção <strong>Colar dados</strong>.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SheetJS Library -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+
+    <script>
+        // ============================================================
+        // CONFIGURAÇÃO DO BACKEND (GOOGLE SHEETS)
+        // Cole abaixo a URL que você copiou do Apps Script (Passo 1)
+        // ============================================================
+        const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbzvBpWb9Vxg6embPY8xnPQfH80Pw_rw4vXyDipSMJqCS7JFak1BZnb8TpCVl6ZUaq61hA/exec'; // COLOQUE SEU LINK AQUI PARA FICAR ONLINE!
+
+        // Embed mode
+        (function(){
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('embed') === '1') {
+                document.body.classList.add('embed-mode');
+            }
+        })();
+
+        // Data Management
+        let records = [];
+        let currentSort = { field: null, direction: 'asc' };
+
+        // Função para converter datas para formato YYYY-MM-DD
+        function normalizeDateToYYYYMMDD(dateStr) {
+            if (!dateStr || dateStr === '') return '';
+            const str = String(dateStr).trim();
+            
+            // Se já está em YYYY-MM-DD, retorna como está
+            if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+            
+            // Formato DD/MM/YYYY
+            const match1 = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+            if (match1) return `${match1[3]}-${match1[2].padStart(2, '0')}-${match1[1].padStart(2, '0')}`;
+            
+            // Tenta como objeto Date
+            try {
+                const d = new Date(str);
+                if (!isNaN(d.getTime())) {
+                    return d.toISOString().split('T')[0];
+                }
+            } catch(e) {}
+            
+            return '';
+        }
+
+        // Carregar dados do Google Sheets ao abrir
+        async function loadRecordsFromSheets() {
+            if (!BACKEND_URL) {
+                records = JSON.parse(localStorage.getItem('containerRecords')) || [];
+                renderTable();
+                return;
+            }
+
+            try {
+                const response = await fetch(BACKEND_URL);
+                const data = await response.json();
+                if (data && Array.isArray(data)) {
+                    records = data.map(r => {
+                        // Garantir formato correto de todas as datas
+                        const dateFields = ['firstEtd', 'etd', 'firstEta', 'eta', 'tracking', 'prazoPagamento', 'dataPgtoRealizado', 'dataNumerario', 'dataPgto', 'subida'];
+                        dateFields.forEach(f => {
+                            if (r[f]) {
+                                r[f] = normalizeDateToYYYYMMDD(r[f]);
+                            }
+                        });
+                        
+                        // Converter campos numéricos
+                        const numFields = ['peso', 'gw', 'rolls', 'valor', 'freetime', 'frete', 'valorNumerario', 'valorReal', 'diferenca', 'proporcao'];
+                        numFields.forEach(f => { 
+                            if(r[f] && r[f] !== '') r[f] = parseFloat(r[f]); 
+                        });
+                        
+                        return r;
+                    });
+                    localStorage.setItem('containerRecords', JSON.stringify(records));
+                }
+            } catch (error) {
+                console.error('Erro ao carregar dados:', error);
+                records = JSON.parse(localStorage.getItem('containerRecords')) || [];
+            }
+            renderTable();
+        }
+
+        // Sincronização com tratamento de datas correto
+        async function syncAll() {
+            // Preparar dados para sincronização
+            const recordsForSync = records.map(r => {
+                const record = {...r};
+                // Garantir que todas as datas estejam em formato YYYY-MM-DD
+                const dateFields = ['firstEtd', 'etd', 'firstEta', 'eta', 'tracking', 'prazoPagamento', 'dataPgtoRealizado', 'dataNumerario', 'dataPgto', 'subida'];
+                dateFields.forEach(f => {
+                    if (record[f]) {
+                        record[f] = normalizeDateToYYYYMMDD(record[f]);
+                    }
+                });
+                return record;
+            });
+            
+            localStorage.setItem('containerRecords', JSON.stringify(records));
+            if (!BACKEND_URL) return;
+            
+            try {
+                await fetch(BACKEND_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    cache: 'no-cache',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(recordsForSync)
+                });
+            } catch (error) {
+                console.error('Erro na sincronização:', error);
+            }
+        }
+
+        function sortTable(field) {
+            if (currentSort.field === field) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.field = field;
+                currentSort.direction = 'asc';
+            }
+
+            document.querySelectorAll('th.sortable').forEach(th => {
+                th.classList.remove('sort-asc', 'sort-desc');
+                if (th.getAttribute('onclick').includes(`'${field}'`)) {
+                    th.classList.add(currentSort.direction === 'asc' ? 'sort-asc' : 'sort-desc');
+                }
+            });
+
+            renderTable();
+        }
+
+        // Status configuration
+        const situacaoConfig = {
+            'ATRACADO BRASIL': { class: 'status-atracado', label: 'Atracado Brasil' },
+            'EM TRANSBORDO': { class: 'status-transbordo', label: 'Em Transbordo' },
+            'EMBARCADO': { class: 'status-embarcado', label: 'Embarcado' },
+            'AGUARDANDO EMBARQUE': { class: 'status-aguardando', label: 'Aguardando' },
+            'LIBERADO': { class: 'status-liberado', label: 'Liberado' },
+            'ENTREGUE': { class: 'status-entregue', label: 'Entregue' }
+        };
+
+        // ========== DROPDOWN MENU AÇÕES ==========
+        function toggleActionsMenu() {
+            const menu = document.getElementById('actionsMenu');
+            menu.classList.toggle('show');
+        }
+
+        function closeActionsMenu() {
+            const menu = document.getElementById('actionsMenu');
+            menu.classList.remove('show');
+        }
+
+        document.addEventListener('click', function(e) {
+            const btn = document.getElementById('actionsBtn');
+            const menu = document.getElementById('actionsMenu');
+            if (btn && menu && !btn.contains(e.target) && !menu.contains(e.target)) {
+                menu.classList.remove('show');
+            }
+        });
+
+        // ========== LIMPAR TODOS OS DADOS ==========
+        function openClearModal() {
+            const modal = document.getElementById('clearModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeClearModal() {
+            const modal = document.getElementById('clearModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        async function confirmClearAll() {
+            if (records.length > 0) {
+                exportDataForBackup();
+            }
+
+            records = [];
+            await syncAll();
+            renderTable();
+            closeClearModal();
+
+            alert('Todos os dados foram limpos!\n\nO backup foi salvo na sua pasta de Downloads.');
+        }
+
+        function exportDataForBackup() {
+            const headers = ['Fornecedor', 'Invoice', 'BCS', 'Montreal', 'Situação', 'Peso', 'G.W', 'Rolls', 'Valor',
+                '1st ETD', 'ETD', 'Dif. ETD', '1st ETA', 'ETA', 'Dif. ETA', 'TT', 'Tracking', 'Freetime',
+                'Navio', 'Transbordo', 'Owner', 'Frete', 'Container', 'BL', 'Prazo Pagamento',
+                'Data Pgto Realizado', 'Data Numerário', 'Valor Num.', 'Data Pgto', 'Subida',
+                'Valor Real', 'Diferença', 'Filial', 'NF', 'Contabilidade', 'Proporção'];
+
+            const rows = records.map(r => [
+                r.fornecedor || '',
+                r.invoice || '',
+                r.bcs || '',
+                r.montreal || '',
+                r.situacao || '',
+                r.peso || '',
+                r.gw || '',
+                r.rolls || '',
+                r.valor || '',
+                r.firstEtd || '',
+                r.etd || '',
+                calcDiff(r.firstEtd, r.etd),
+                r.firstEta || '',
+                r.eta || '',
+                calcDiff(r.firstEta, r.eta),
+                calcTT(r.etd, r.eta),
+                r.tracking || '',
+                r.freetime || '',
+                r.navio || '',
+                r.transbordo || '',
+                r.owner || '',
+                r.frete || '',
+                r.container || '',
+                r.bl || '',
+                r.prazoPagamento || '',
+                r.dataPgtoRealizado || '',
+                r.dataNumerario || '',
+                r.valorNumerario || '',
+                r.dataPgto || '',
+                r.subida || '',
+                r.valorReal || '',
+                r.diferenca || '',
+                r.filial || '',
+                r.nf || '',
+                r.contabilidade || '',
+                r.proporcao || ''
+            ]);
+
+            let csv = headers.join(';') + '\n';
+            rows.forEach(row => {
+                csv += row.map(cell => `"${cell}"`).join(';') + '\n';
+            });
+
+            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `backup_timeframe_${new Date().toISOString().split('T')[0]}_${Date.now()}.csv`;
+            link.click();
+        }
+
+        async function saveData() {
+            await syncAll();
+        }
+
+        // Format functions
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            const normalized = normalizeDateToYYYYMMDD(dateStr);
+            return normalized || '-';
+        }
+
+        function formatCurrency(value, currency = '$') {
+            if (value === undefined || value === null || value === '' || value === 0) return '-';
+            return currency + ' ' + parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+        }
+
+        function formatNumber(value) {
+            if (value === undefined || value === null || value === '' || value === 0) return '-';
+            return parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+        }
+
+        function calcDiff(date1, date2) {
+            if (!date1 || !date2) return 0;
+            try {
+                const d1 = new Date(normalizeDateToYYYYMMDD(date1) + 'T00:00:00');
+                const d2 = new Date(normalizeDateToYYYYMMDD(date2) + 'T00:00:00');
+                
+                if (isNaN(d1.getTime()) || isNaN(d2.getTime())) return 0;
+                
+                const diffTime = d2 - d1;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                return isNaN(diffDays) ? 0 : diffDays;
+            } catch (e) {
+                return 0;
+            }
+        }
+
+        function calcTT(etd, eta) {
+            if (!etd || !eta) return 0;
+            return calcDiff(etd, eta);
+        }
+
+        // Update filter dropdowns
+        function updateFilters() {
+            const fornecedores = [...new Set(records.map(r => r.fornecedor).filter(Boolean))].sort();
+            const owners = [...new Set(records.map(r => r.owner).filter(Boolean))].sort();
+
+            const filterFornecedor = document.getElementById('filterFornecedor');
+            const filterOwner = document.getElementById('filterOwner');
+
+            filterFornecedor.innerHTML = '<option value="">Todos Fornecedores</option>' +
+                fornecedores.map(f => `<option value="${f}">${f}</option>`).join('');
+
+            filterOwner.innerHTML = '<option value="">Todos Owners</option>' +
+                owners.map(o => `<option value="${o}">${o}</option>`).join('');
+        }
+
+        // Update statistics
+        function updateStats(filteredData = null) {
+            const data = filteredData || records;
+            const totalPeso = data.reduce((sum, r) => sum + (parseFloat(r.peso) || 0), 0);
+            const totalValor = data.reduce((sum, r) => sum + (parseFloat(r.valor) || 0), 0);
+
+            document.getElementById('totalContainers').textContent = data.length;
+            document.getElementById('totalPeso').textContent = totalPeso.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) + ' kg';
+            document.getElementById('totalValor').textContent = '$' + totalValor.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+
+            document.getElementById('statAtracado').textContent = data.filter(r => r.situacao === 'ATRACADO BRASIL').length;
+            document.getElementById('statTransbordo').textContent = data.filter(r => r.situacao === 'EM TRANSBORDO').length;
+            document.getElementById('statEmbarcado').textContent = data.filter(r => r.situacao === 'EMBARCADO').length;
+            document.getElementById('statAguardando').textContent = data.filter(r => r.situacao === 'AGUARDANDO EMBARQUE').length;
+            document.getElementById('statLiberado').textContent = data.filter(r => r.situacao === 'LIBERADO').length;
+            document.getElementById('statEntregue').textContent = data.filter(r => r.situacao === 'ENTREGUE').length;
+        }
+
+        // Render table
+        function renderTable() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const situacaoFilter = document.getElementById('filterSituacao').value;
+            const fornecedorFilter = document.getElementById('filterFornecedor').value;
+            const ownerFilter = document.getElementById('filterOwner').value;
+            const etdStart = document.getElementById('filterEtdStart').value;
+            const etdEnd = document.getElementById('filterEtdEnd').value;
+            const etaStart = document.getElementById('filterEtaStart').value;
+            const etaEnd = document.getElementById('filterEtaEnd').value;
+
+            let filtered = records.filter(r => {
+                const matchSearch = !searchTerm ||
+                    (r.fornecedor && r.fornecedor.toLowerCase().includes(searchTerm)) ||
+                    (r.invoice && r.invoice.toLowerCase().includes(searchTerm)) ||
+                    (r.bl && r.bl.toLowerCase().includes(searchTerm)) ||
+                    (r.container && r.container.toLowerCase().includes(searchTerm)) ||
+                    (r.navio && r.navio.toLowerCase().includes(searchTerm));
+                
+                const matchSituacao = !situacaoFilter || r.situacao === situacaoFilter;
+                const matchFornecedor = !fornecedorFilter || r.fornecedor === fornecedorFilter;
+                const matchOwner = !ownerFilter || r.owner === ownerFilter;
+
+                const matchEtd = (!etdStart || (r.etd && new Date(r.etd) >= new Date(etdStart))) &&
+                                (!etdEnd || (r.etd && new Date(r.etd) <= new Date(etdEnd)));
+
+                const matchEta = (!etaStart || (r.eta && new Date(r.eta) >= new Date(etaStart))) &&
+                                (!etaEnd || (r.eta && new Date(r.eta) <= new Date(etaEnd)));
+
+                return matchSearch && matchSituacao && matchFornecedor && matchOwner && matchEtd && matchEta;
+            });
+
+            // Apply Sorting
+            if (currentSort.field) {
+                filtered.sort((a, b) => {
+                    let valA = a[currentSort.field];
+                    let valB = b[currentSort.field];
+
+                    const numericFields = ['peso', 'gw', 'rolls', 'valor', 'freetime', 'frete', 'valorNumerario', 'valorReal', 'diferenca', 'proporcao'];
+                    if (numericFields.includes(currentSort.field)) {
+                        valA = parseFloat(valA) || 0;
+                        valB = parseFloat(valB) || 0;
+                    } else {
+                        valA = String(valA || '').toLowerCase();
+                        valB = String(valB || '').toLowerCase();
+                    }
+
+                    if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
+                    if (valA > valB) return currentSort.direction === 'asc' ? 1 : -1;
+                    return 0;
+                });
+            }
+
+            const tbody = document.getElementById('tableBody');
+            const emptyState = document.getElementById('emptyState');
+            const tableContainer = document.querySelector('.table-container').parentElement;
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '';
+                tableContainer.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                tableContainer.classList.remove('hidden');
+                tbody.innerHTML = filtered.map(r => createTableRow(r)).join('');
+            }
+
+            updateStats(filtered);
+            updateFilters();
+        }
+
+        // Create table row
+        function createTableRow(record) {
+            const situacao = situacaoConfig[record.situacao] || { class: 'status-aguardando', label: record.situacao };
+            const diffEtd = calcDiff(record.firstEtd, record.etd);
+            const diffEta = calcDiff(record.firstEta, record.eta);
+            const tt = calcTT(record.etd, record.eta);
+
+            let paymentClass = "";
+            let paymentTitle = "";
+            
+            if (record.prazoPagamento && !record.dataPgtoRealizado) {
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                const dueDate = new Date(normalizeDateToYYYYMMDD(record.prazoPagamento) + 'T00:00:00');
+                const diffDays = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+
+                if (diffDays < 0) {
+                    paymentClass = "payment-warning font-bold";
+                    paymentTitle = "PAGAMENTO ATRASADO";
+                } else if (diffDays <= 5) {
+                    paymentClass = "payment-near font-bold";
+                    paymentTitle = "PAGAMENTO PRÓXIMO";
+                }
+            }
+
+            return `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-3 py-2">
+                        <div class="flex gap-1">
+                            <button onclick="editRecord('${record.id}')" class="p-1 text-blue-600 hover:bg-blue-100 rounded" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteRecord('${record.id}')" class="p-1 text-red-600 hover:bg-red-100 rounded" title="Excluir">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                    <td class="px-3 py-2 font-medium">${record.fornecedor || '-'}</td>
+                    <td class="px-3 py-2">${record.invoice || '-'}</td>
+                    <td class="px-3 py-2">${record.bcs || '-'}</td>
+                    <td class="px-3 py-2">${record.montreal || '-'}</td>
+                    <td class="px-3 py-2">
+                        <span class="px-2 py-1 text-xs font-medium rounded ${situacao.class}">${situacao.label}</span>
+                    </td>
+                    <td class="px-3 py-2 text-right">${formatNumber(record.peso)}</td>
+                    <td class="px-3 py-2 text-right">${formatNumber(record.gw)}</td>
+                    <td class="px-3 py-2 text-right">${record.rolls || '-'}</td>
+                    <td class="px-3 py-2 text-right font-medium text-green-700">${formatCurrency(record.valor)}</td>
+                    <td class="px-3 py-2 text-center">${formatDate(record.firstEtd)}</td>
+                    <td class="px-3 py-2 text-center">${formatDate(record.etd)}</td>
+                    <td class="px-3 py-2 text-center ${diffEtd > 0 ? 'text-red-600 font-bold' : 'text-green-600'}">${diffEtd} d</td>
+                    <td class="px-3 py-2 text-center">${formatDate(record.firstEta)}</td>
+                    <td class="px-3 py-2 text-center">${formatDate(record.eta)}</td>
+                    <td class="px-3 py-2 text-center ${diffEta > 0 ? 'text-red-600 font-bold' : 'text-green-600'}">${diffEta} d</td>
+                    <td class="px-3 py-2 text-center font-bold bg-gray-50">${tt} d</td>
+                    <td class="px-3 py-2 text-center">${formatDate(record.tracking)}</td>
+                    <td class="px-3 py-2 text-center">${record.freetime || '-'}</td>
+                    <td class="px-3 py-2">${record.navio || '-'}</td>
+                    <td class="px-3 py-2 text-xs">${record.transbordo || '-'}</td>
+                    <td class="px-3 py-2">${record.owner || '-'}</td>
+                    <td class="px-3 py-2 text-right">${formatCurrency(record.frete)}</td>
+                    <td class="px-3 py-2 font-mono text-xs">${record.container || '-'}</td>
+                    <td class="px-3 py-2 font-mono text-xs">${record.bl || '-'}</td>
+                    <td class="px-3 py-2 text-center ${paymentClass}" title="${paymentTitle}">${formatDate(record.prazoPagamento)}</td>
+                    <td class="px-3 py-2 text-center">${formatDate(record.dataPgtoRealizado)}</td>
+                    <td class="px-3 py-2 text-center">${formatDate(record.dataNumerario)}</td>
+                    <td class="px-3 py-2 text-right">${formatCurrency(record.valorNumerario, 'R$')}</td>
+                    <td class="px-3 py-2 text-center">${formatDate(record.dataPgto)}</td>
+                    <td class="px-3 py-2 text-center">${formatDate(record.subida)}</td>
+                    <td class="px-3 py-2 text-right">${formatCurrency(record.valorReal, 'R$')}</td>
+                    <td class="px-3 py-2 text-right">${formatCurrency(record.diferenca, 'R$')}</td>
+                    <td class="px-3 py-2">${record.filial || '-'}</td>
+                    <td class="px-3 py-2">${record.nf || '-'}</td>
+                    <td class="px-3 py-2">${record.contabilidade || '-'}</td>
+                    <td class="px-3 py-2 text-right">${record.proporcao || '-'}</td>
+                </tr>
+            `;
+        }
+
+        // Modal functions
+        function openModal(recordId = null) {
+            const modal = document.getElementById('modal');
+            const form = document.getElementById('containerForm');
+            const title = document.getElementById('modalTitle');
+            
+            form.reset();
+            document.getElementById('recordId').value = '';
+
+            if (recordId) {
+                const record = records.find(r => r.id === recordId);
+                if (record) {
+                    title.textContent = 'Editar Registro';
+                    document.getElementById('recordId').value = record.id;
+                    
+                    const fields = ['fornecedor', 'invoice', 'bcs', 'montreal', 'situacao', 'peso', 'gw', 'rolls', 'valor',
+                        'firstEtd', 'etd', 'firstEta', 'eta', 'tracking', 'freetime', 'navio', 'transbordo', 'owner', 'frete',
+                        'container', 'bl', 'prazoPagamento', 'dataPgtoRealizado', 'dataNumerario', 'valorNumerario',
+                        'dataPgto', 'subida', 'valorReal', 'diferenca', 'filial', 'nf', 'contabilidade', 'proporcao'];
+                    
+                    fields.forEach(field => {
+                        const el = document.getElementById(field);
+                        if (el && record[field] !== undefined) {
+                            el.value = record[field];
+                        }
+                    });
+                }
+            } else {
+                title.textContent = 'Novo Registro';
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        // Form submission
+        document.getElementById('containerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const recordId = document.getElementById('recordId').value;
+            const recordData = {
+                id: recordId || Date.now().toString(),
+                fornecedor: document.getElementById('fornecedor').value,
+                invoice: document.getElementById('invoice').value,
+                bcs: document.getElementById('bcs').value,
+                montreal: document.getElementById('montreal').value,
+                situacao: document.getElementById('situacao').value,
+                peso: document.getElementById('peso').value,
+                gw: document.getElementById('gw').value,
+                rolls: document.getElementById('rolls').value,
+                valor: document.getElementById('valor').value,
+                firstEtd: normalizeDateToYYYYMMDD(document.getElementById('firstEtd').value),
+                etd: normalizeDateToYYYYMMDD(document.getElementById('etd').value),
+                firstEta: normalizeDateToYYYYMMDD(document.getElementById('firstEta').value),
+                eta: normalizeDateToYYYYMMDD(document.getElementById('eta').value),
+                tracking: normalizeDateToYYYYMMDD(document.getElementById('tracking').value),
+                freetime: document.getElementById('freetime').value,
+                navio: document.getElementById('navio').value,
+                transbordo: document.getElementById('transbordo').value,
+                owner: document.getElementById('owner').value,
+                frete: document.getElementById('frete').value,
+                container: document.getElementById('container').value.toUpperCase(),
+                bl: document.getElementById('bl').value,
+                prazoPagamento: normalizeDateToYYYYMMDD(document.getElementById('prazoPagamento').value),
+                dataPgtoRealizado: normalizeDateToYYYYMMDD(document.getElementById('dataPgtoRealizado').value),
+                dataNumerario: normalizeDateToYYYYMMDD(document.getElementById('dataNumerario').value),
+                valorNumerario: document.getElementById('valorNumerario').value,
+                dataPgto: normalizeDateToYYYYMMDD(document.getElementById('dataPgto').value),
+                subida: normalizeDateToYYYYMMDD(document.getElementById('subida').value),
+                valorReal: document.getElementById('valorReal').value,
+                diferenca: document.getElementById('diferenca').value,
+                filial: document.getElementById('filial').value,
+                nf: document.getElementById('nf').value,
+                contabilidade: document.getElementById('contabilidade').value,
+                proporcao: document.getElementById('proporcao').value,
+                updatedAt: new Date().toISOString()
+            };
+
+            if (recordId) {
+                const index = records.findIndex(r => r.id === recordId);
+                if (index !== -1) {
+                    records[index] = { ...records[index], ...recordData };
+                }
+            } else {
+                recordData.createdAt = new Date().toISOString();
+                records.unshift(recordData);
+            }
+
+            await saveData(recordData);
+            renderTable();
+            closeModal();
+        });
+
+        // Edit record
+        function editRecord(id) {
+            openModal(id);
+        }
+
+        // Delete record
+        function deleteRecord(id) {
+            document.getElementById('deleteRecordId').value = id;
+            const modal = document.getElementById('deleteModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeDeleteModal() {
+            const modal = document.getElementById('deleteModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        async function confirmDelete() {
+            const id = document.getElementById('deleteRecordId').value;
+            records = records.filter(r => r.id !== id);
+            await saveData(id, 'delete');
+            renderTable();
+            closeDeleteModal();
+        }
+
+        // Import functions
+        function setImportTab(tab) {
+            const pasteBtn = document.getElementById('importTabPaste');
+            const excelBtn = document.getElementById('importTabExcel');
+            const sheetBtn = document.getElementById('importTabSheet');
+            const pastePanel = document.getElementById('importPanelPaste');
+            const excelPanel = document.getElementById('importPanelExcel');
+            const sheetPanel = document.getElementById('importPanelSheet');
+
+            pasteBtn.className = 'px-3 py-2 text-sm rounded-md text-gray-600 hover:text-gray-800';
+            excelBtn.className = 'px-3 py-2 text-sm rounded-md text-gray-600 hover:text-gray-800';
+            sheetBtn.className = 'px-3 py-2 text-sm rounded-md text-gray-600 hover:text-gray-800';
+
+            pastePanel.classList.add('hidden');
+            excelPanel.classList.add('hidden');
+            sheetPanel.classList.add('hidden');
+
+            if (tab === 'excel') {
+                excelBtn.className = 'px-3 py-2 text-sm rounded-md bg-white shadow-sm text-gray-800 font-semibold';
+                excelPanel.classList.remove('hidden');
+            } else if (tab === 'sheet') {
+                sheetBtn.className = 'px-3 py-2 text-sm rounded-md bg-white shadow-sm text-gray-800 font-semibold';
+                sheetPanel.classList.remove('hidden');
+            } else {
+                pasteBtn.className = 'px-3 py-2 text-sm rounded-md bg-white shadow-sm text-gray-800 font-semibold';
+                pastePanel.classList.remove('hidden');
+            }
+        }
+
+        function importData() {
+            const modal = document.getElementById('importModal');
+            document.getElementById('importText').value = '';
+            document.getElementById('importBaseYear').value = new Date().getFullYear();
+            document.getElementById('importReplace').checked = false;
+
+            document.getElementById('excelFile').value = '';
+            document.getElementById('excelBaseYear').value = new Date().getFullYear();
+            document.getElementById('excelPreview').value = '';
+
+            document.getElementById('sheetUrl').value = '';
+            document.getElementById('sheetName').value = '';
+            document.getElementById('sheetBaseYear').value = new Date().getFullYear();
+            document.getElementById('sheetPreview').value = '';
+
+            setImportTab('paste');
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeImportModal() {
+            const modal = document.getElementById('importModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function normHeader(str) {
+            return String(str || '').replace(/\u00A0/g, ' ').replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim().toUpperCase();
+        }
+
+        function cleanCell(str) {
+            return String(str || '').replace(/\u00A0/g, ' ').replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+        }
+
+        function parseDelimited(text, delimiter) {
+            const rows = [];
+            let row = [];
+            let cell = '';
+            let inQuotes = false;
+
+            const s = String(text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+            for (let i = 0; i < s.length; i++) {
+                const ch = s[i];
+                const next = s[i + 1];
+
+                if (ch === '"') {
+                    if (inQuotes && next === '"') {
+                        cell += '"';
+                        i++;
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                    continue;
+                }
+
+                if (!inQuotes && ch === delimiter) {
+                    row.push(cell);
+                    cell = '';
+                    continue;
+                }
+
+                if (!inQuotes && ch === '\n') {
+                    row.push(cell);
+                    if (row.some(c => String(c).trim() !== '')) rows.push(row);
+                    row = [];
+                    cell = '';
+                    continue;
+                }
+
+                cell += ch;
+            }
+
+            row.push(cell);
+            if (row.some(c => String(c).trim() !== '')) rows.push(row);
+            return rows;
+        }
+
+        function detectDelimiter(text) {
+            const s = String(text || '');
+            if (s.includes('\t')) return '\t';
+            if (s.includes(';') && !s.includes(',')) return ';';
+            return ',';
+        }
+
+        function parseDate(dateStr, baseYear) {
+            let raw = cleanCell(dateStr);
+            if (!raw || raw === '-') return '';
+
+            // Se for número serial do Excel (ex: 45678)
+            if (!isNaN(raw) && !raw.includes('/') && !raw.includes('-')) {
+                const excelDate = new Date(Math.round((raw - 25569) * 86400 * 1000));
+                return excelDate.toISOString().split('T')[0];
+            }
+
+            const year = parseInt(baseYear, 10) || new Date().getFullYear();
+
+            // Formato YYYY-MM-DD
+            if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+
+            // Formato DD/MM/YYYY ou DD/MM/YY
+            const brMatch = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+            if (brMatch) {
+                let y = brMatch[3];
+                if (y.length === 2) y = "20" + y;
+                return `${y}-${brMatch[2].padStart(2, '0')}-${brMatch[1].padStart(2, '0')}`;
+            }
+
+            // Formato DD-MMM (ex: 28-Nov)
+            const monthMap = {
+                JAN: '01', FEB: '02', MAR: '03', APR: '04', MAY: '05', JUN: '06',
+                JUL: '07', AUG: '08', SEP: '09', OCT: '10', NOV: '11', DEC: '12',
+                'JAN.': '01', 'FEV.': '02', 'MAR.': '03', 'ABR.': '04', 'MAI.': '05', 'JUN.': '06',
+                'JUL.': '07', 'AGO.': '08', 'SET.': '09', 'OUT.': '10', 'NOV.': '11', 'DEZ.': '12',
+                'JAN': '01', 'FEV': '02', 'MAR': '03', 'ABR': '04', 'MAI': '05', 'JUN': '06',
+                'JUL': '07', 'AGO': '08', 'SET': '09', 'OUT': '10', 'NOV': '11', 'DEZ': '12'
+            };
+
+            const m = raw.match(/^(\d{1,2})[-\/]([A-Za-z.]{3,4})[-\/]?(?:\d{2,4})?$/);
+            if (m) {
+                const day = m[1].padStart(2, '0');
+                let monthName = m[2].toUpperCase();
+                // Tradução simples para meses comuns em PT-BR
+                if (monthName === 'MAI') monthName = 'MAY';
+                if (monthName === 'AGO') monthName = 'AUG';
+                if (monthName === 'SET') monthName = 'SEP';
+                if (monthName === 'OUT') monthName = 'OCT';
+                if (monthName === 'DEZ') monthName = 'DEC';
+
+                const mon = monthMap[monthName] || monthMap[m[2].toUpperCase()];
+                if (!mon) return '';
+                return `${year}-${mon}-${day}`;
+            }
+
+            // Tenta o parser nativo como última opção
+            try {
+                const d = new Date(raw);
+                if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
+            } catch(e) {}
+
+            return '';
+        }
+
+        function parseNumber(str) {
+            const raw = cleanCell(str);
+            if (!raw || raw === '-' || raw.toLowerCase() === 'r$' || raw === '0') return 0;
+
+            let s = raw.replace(/R\$|\$|USD|BRL/gi, '').replace(/\s+/g, '').replace(/[^-0-9.,]/g, '');
+
+            if (!s || s === '-' || s === '--') return 0;
+
+            const lastDot = s.lastIndexOf('.');
+            const lastComma = s.lastIndexOf(',');
+
+            if (lastComma > lastDot) {
+                s = s.replace(/\./g, '').replace(',', '.');
+            } else if (lastDot > lastComma && lastComma !== -1) {
+                s = s.replace(/,/g, '');
+            } else if (lastComma !== -1 && lastDot === -1) {
+                s = s.replace(',', '.');
+            }
+
+            const num = parseFloat(s);
+            return isNaN(num) ? 0 : num;
+        }
+
+        function columnMapping() {
+            return {
+                'FORNECEDOR': 'fornecedor',
+                'INVOICE': 'invoice',
+                'BCS': 'bcs',
+                'MONTREAL': 'montreal',
+                'SITUAÇÃO': 'situacao',
+                'SITUACAO': 'situacao',
+                'PESO': 'peso',
+                'G.W': 'gw',
+                'GW': 'gw',
+                'ROLLS': 'rolls',
+                'VALOR': 'valor',
+                '1ST ETD': 'firstEtd',
+                'ETD': 'etd',
+                '1ST ETA': 'firstEta',
+                'ETA': 'eta',
+                'TRACKING': 'tracking',
+                'FREETIME': 'freetime',
+                'NAVIO': 'navio',
+                'TRANSBORDO': 'transbordo',
+                'OWNER': 'owner',
+                'FRETE': 'frete',
+                'CONTAINER': 'container',
+                'BL': 'bl',
+                'PRAZO PAGAMENTO': 'prazoPagamento',
+                'PRAZO PGTO': 'prazoPagamento',
+                'DATA PGTO REALIZADO': 'dataPgtoRealizado',
+                'DATA NUMERARIO': 'dataNumerario',
+                'DATA NUMERÁRIO': 'dataNumerario',
+                'VALOR NUM.': 'valorNumerario',
+                'VALOR NUM': 'valorNumerario',
+                'DATA PGTO': 'dataPgto',
+                'SUBIDA': 'subida',
+                'VALOR REAL': 'valorReal',
+                'DIFERENÇA': 'diferenca',
+                'DIFERENCA': 'diferenca',
+                'FILIAL': 'filial',
+                'NF': 'nf',
+                'CONTABILIDADE': 'contabilidade',
+                'PROPORÇÃO': 'proporcao',
+                'PROPORCAO': 'proporcao'
+            };
+        }
+
+        function rowsToRecords(rows, baseYear, replaceExisting = false) {
+            if (!rows || rows.length < 2) return 0;
+
+            const map = columnMapping();
+            const headerRaw = rows[0];
+            const header = headerRaw.map(h => normHeader(h));
+
+            const dateFields = new Set(['firstEtd', 'etd', 'firstEta', 'eta', 'tracking', 'prazoPagamento', 'dataPgtoRealizado', 'dataNumerario', 'dataPgto', 'subida']);
+            const numberFields = new Set(['peso', 'gw', 'rolls', 'valor', 'freetime', 'frete', 'valorNumerario', 'valorReal', 'diferenca', 'proporcao']);
+
+            if (replaceExisting) {
+                records = [];
+            }
+
+            let imported = 0;
+
+            for (let i = 1; i < rows.length; i++) {
+                const values = rows[i];
+                if (!values || values.length < 2) continue;
+
+                const record = {
+                    id: Date.now().toString() + '_' + i,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+
+                header.forEach((col, idx) => {
+                    const fieldName = map[col];
+                    if (!fieldName) return;
+
+                    let value = values[idx] !== undefined ? cleanCell(values[idx]) : '';
+
+                    if (dateFields.has(fieldName)) {
+                        value = parseDate(value, baseYear);
+                    } else if (numberFields.has(fieldName)) {
+                        value = parseNumber(value);
+                    }
+
+                    if (fieldName === 'container') {
+                        value = String(value || '').toUpperCase();
+                    }
+
+                    record[fieldName] = value;
+                });
+
+                if (record.fornecedor || record.invoice || record.bl || record.container) {
+                    records.push(record);
+                    imported++;
+                }
+            }
+
+            return imported;
+        }
+
+        function processImport() {
+            const text = document.getElementById('importText').value;
+            const baseYear = document.getElementById('importBaseYear').value;
+            const replaceExisting = document.getElementById('importReplace').checked;
+
+            if (!text || !text.trim()) {
+                alert('Por favor, cole os dados para importar.');
+                return;
+            }
+
+            const delimiter = detectDelimiter(text);
+            const rows = parseDelimited(text.trim(), delimiter);
+
+            if (!rows || rows.length < 2) {
+                alert('Dados insuficientes. Certifique-se de incluir o cabeçalho e pelo menos uma linha de dados.');
+                return;
+            }
+
+            const imported = rowsToRecords(rows, baseYear, replaceExisting);
+
+            saveData();
+            renderTable();
+            closeImportModal();
+            alert(`${imported} registros importados com sucesso!`);
+        }
+
+        function extractSpreadsheetInfo(url) {
+            const u = String(url || '').trim();
+            if (!u) return null;
+
+            const m1 = u.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+            if (m1) return { type: 'id', id: m1[1] };
+
+            const m2 = u.match(/\/spreadsheets\/d\/e\/([a-zA-Z0-9-_]+)/);
+            if (m2) return { type: 'pub', id: m2[1] };
+
+            return null;
+        }
+
+        function buildSheetCsvUrl() {
+            const sheetUrl = document.getElementById('sheetUrl').value.trim();
+            const sheetName = document.getElementById('sheetName').value.trim();
+
+            const info = extractSpreadsheetInfo(sheetUrl);
+            if (!info) return null;
+
+            if (info.type === 'id') {
+                let url = `https://docs.google.com/spreadsheets/d/${info.id}/gviz/tq?tqx=out:csv`;
+                if (sheetName) url += `&sheet=${encodeURIComponent(sheetName)}`;
+                return url;
+            }
+
+            return `https://docs.google.com/spreadsheets/d/e/${info.id}/pub?output=csv`;
+        }
+
+        async function loadSheetPreview() {
+            const out = document.getElementById('sheetPreview');
+            out.value = 'Carregando...';
+
+            const url = buildSheetCsvUrl();
+            if (!url) {
+                out.value = '';
+                alert('Cole um link válido do Google Sheets.');
+                return;
+            }
+
+            try {
+                const res = await fetch(url, { cache: 'no-store' });
+                if (!res.ok) throw new Error('Falha ao acessar a planilha.');
+                const csv = await res.text();
+                out.value = csv.slice(0, 4000);
+            } catch (err) {
+                out.value = '';
+                alert('Não foi possível carregar a planilha. Verifique se ela está "Publicada na Web" e se o link está correto.');
+            }
+        }
+
+        async function importFromSheetLink() {
+            const url = buildSheetCsvUrl();
+            if (!url) {
+                alert('Cole um link válido do Google Sheets.');
+                return;
+            }
+
+            const baseYear = document.getElementById('sheetBaseYear').value;
+
+            try {
+                const res = await fetch(url, { cache: 'no-store' });
+                if (!res.ok) throw new Error('Falha ao acessar a planilha.');
+
+                const csv = await res.text();
+                const rows = parseDelimited(csv.trim(), ',');
+
+                if (!rows || rows.length < 2) {
+                    alert('A planilha não retornou dados suficientes.');
+                    return;
+                }
+
+                const imported = rowsToRecords(rows, baseYear, false);
+                saveData();
+                renderTable();
+                closeImportModal();
+                alert(`${imported} registros importados com sucesso!`);
+            } catch (err) {
+                alert('Não foi possível importar via link. Publique a planilha na web ou use a opção de colar os dados.');
+            }
+        }
+
+        // Excel import functions
+        function loadExcelPreview() {
+            const fileInput = document.getElementById('excelFile');
+            const preview = document.getElementById('excelPreview');
+
+            if (!fileInput.files || !fileInput.files[0]) {
+                alert('Selecione um arquivo Excel primeiro.');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    
+                    const csv = XLSX.utils.sheet_to_csv(worksheet);
+                    preview.value = csv.slice(0, 2000);
+                } catch (err) {
+                    alert('Erro ao ler o arquivo Excel: ' + err.message);
+                    preview.value = '';
+                }
+            };
+
+            reader.readAsArrayBuffer(file);
+        }
+
+        function importFromExcel() {
+            const fileInput = document.getElementById('excelFile');
+            const baseYear = document.getElementById('excelBaseYear').value;
+
+            if (!fileInput.files || !fileInput.files[0]) {
+                alert('Selecione um arquivo Excel primeiro.');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    
+                    const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false, defval: '' });
+
+                    if (!rows || rows.length < 2) {
+                        alert('O arquivo Excel não contém dados suficientes.');
+                        return;
+                    }
+
+                    const imported = rowsToRecords(rows, baseYear, false);
+                    saveData();
+                    renderTable();
+                    closeImportModal();
+                    alert(`${imported} registros importados com sucesso do Excel!`);
+                } catch (err) {
+                    alert('Erro ao processar o arquivo Excel: ' + err.message);
+                }
+            };
+
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Export data
+        function exportData() {
+            if (records.length === 0) {
+                alert('Não há dados para exportar.');
+                return;
+            }
+
+            const headers = ['Fornecedor', 'Invoice', 'BCS', 'Montreal', 'Situação', 'Peso', 'G.W', 'Rolls', 'Valor',
+                '1st ETD', 'ETD', 'Dif. ETD', '1st ETA', 'ETA', 'Dif. ETA', 'TT', 'Tracking', 'Freetime',
+                'Navio', 'Transbordo', 'Owner', 'Frete', 'Container', 'BL', 'Prazo Pagamento',
+                'Data Pgto Realizado', 'Data Numerário', 'Valor Num.', 'Data Pgto', 'Subida',
+                'Valor Real', 'Diferença', 'Filial', 'NF', 'Contabilidade', 'Proporção'];
+
+            const rows = records.map(r => [
+                r.fornecedor || '',
+                r.invoice || '',
+                r.bcs || '',
+                r.montreal || '',
+                r.situacao || '',
+                r.peso || '',
+                r.gw || '',
+                r.rolls || '',
+                r.valor || '',
+                r.firstEtd || '',
+                r.etd || '',
+                calcDiff(r.firstEtd, r.etd),
+                r.firstEta || '',
+                r.eta || '',
+                calcDiff(r.firstEta, r.eta),
+                calcTT(r.etd, r.eta),
+                r.tracking || '',
+                r.freetime || '',
+                r.navio || '',
+                r.transbordo || '',
+                r.owner || '',
+                r.frete || '',
+                r.container || '',
+                r.bl || '',
+                r.prazoPagamento || '',
+                r.dataPgtoRealizado || '',
+                r.dataNumerario || '',
+                r.valorNumerario || '',
+                r.dataPgto || '',
+                r.subida || '',
+                r.valorReal || '',
+                r.diferenca || '',
+                r.filial || '',
+                r.nf || '',
+                r.contabilidade || '',
+                r.proporcao || ''
+            ]);
+
+            let csv = headers.join(';') + '\n';
+            rows.forEach(row => {
+                csv += row.map(cell => `"${cell}"`).join(';') + '\n';
+            });
+
+            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `timeframe_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+        }
+
+        // Filter events
+        document.getElementById('searchInput').addEventListener('input', renderTable);
+        document.getElementById('filterSituacao').addEventListener('change', renderTable);
+        document.getElementById('filterFornecedor').addEventListener('change', renderTable);
+        document.getElementById('filterOwner').addEventListener('change', renderTable);
+        document.getElementById('filterEtdStart').addEventListener('change', renderTable);
+        document.getElementById('filterEtdEnd').addEventListener('change', renderTable);
+        document.getElementById('filterEtaStart').addEventListener('change', renderTable);
+        document.getElementById('filterEtaEnd').addEventListener('change', renderTable);
+
+        // Close modals on escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+                closeDeleteModal();
+                closeImportModal();
+                closeClearModal();
+                closeActionsMenu();
+            }
+        });
+
+        // Close modals on backdrop click
+        document.getElementById('modal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+        document.getElementById('deleteModal').addEventListener('click', function(e) {
+            if (e.target === this) closeDeleteModal();
+        });
+        document.getElementById('clearModal').addEventListener('click', function(e) {
+            if (e.target === this) closeClearModal();
+        });
+        document.getElementById('importModal').addEventListener('click', function(e) {
+            if (e.target === this) closeImportModal();
+        });
+
+        // Initial render
+        loadRecordsFromSheets();
+
+        // Add sample data if empty
+        if (records.length === 0 && !BACKEND_URL) {
+            records = [
+                {
+                    id: '1',
+                    fornecedor: 'KDL',
+                    invoice: 'KDL-ZAM-47-50(9)',
+                    bcs: '25/0576 - Nov25',
+                    montreal: '1415/25',
+                    situacao: 'ATRACADO BRASIL',
+                    peso: 17567.85,
+                    gw: 18110.00,
+                    rolls: 367,
+                    valor: 46335.67,
+                    firstEtd: '2025-11-25',
+                    etd: '2025-11-28',
+                    firstEta: '2026-01-15',
+                    eta: '2026-01-23',
+                    tracking: '2026-01-19',
+                    freetime: 14,
+                    navio: 'KOTA SAHABAT / VG: 0548W',
+                    transbordo: '18/12 - KOTA EBONY KEBO0004W',
+                    owner: 'PIL',
+                    frete: 1815.00,
+                    container: 'PCIU6136587',
+                    bl: 'ASLOE2511020',
+                    prazoPagamento: '2026-01-27',
+                    dataPgtoRealizado: '',
+                    dataNumerario: '',
+                    valorNumerario: 0,
+                    dataPgto: '',
+                    subida: '',
+                    valorReal: 0,
+                    diferenca: 0,
+                    filial: 'Matriz',
+                    nf: '',
+                    contabilidade: '',
+                    proporcao: 0,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                }
+            ];
+            saveData();
+            renderTable();
+        }
+    </script>
+</body>
+</html>
