@@ -39,38 +39,6 @@
             background-color: #1f2937; /* bg-gray-800 */
             box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4);
         }
-        /* Colunas Fixas Horizontais */
-        #dataTable th:nth-child(1),
-        #dataTable td:nth-child(1) {
-            position: sticky;
-            left: 0;
-            z-index: 20;
-            min-width: 75px;
-            width: 75px;
-        }
-        #dataTable th:nth-child(2),
-        #dataTable td:nth-child(2) {
-            position: sticky;
-            left: 75px;
-            z-index: 20;
-            min-width: 150px;
-            width: 150px;
-            border-right: 2px solid #e5e7eb;
-        }
-        #dataTable thead th:nth-child(1),
-        #dataTable thead th:nth-child(2) {
-            z-index: 40;
-            background-color: #1f2937;
-        }
-        #dataTable tbody td:nth-child(1),
-        #dataTable tbody td:nth-child(2) {
-            background-color: #ffffff;
-        }
-        #dataTable tr:hover td:nth-child(1),
-        #dataTable tr:hover td:nth-child(2) {
-            background-color: #f9fafb;
-        }
-
         /* Altura máxima para a tabela com rolagem */
         .table-container {
             max-height: 70vh; /* Ocupa 70% da altura da tela */
@@ -379,6 +347,7 @@
                             <th class="sortable px-3 py-3 text-right font-semibold" onclick="sortTable('frete')">Frete</th>
                             <th class="sortable px-3 py-3 text-left font-semibold" onclick="sortTable('container')">Container</th>
                             <th class="sortable px-3 py-3 text-left font-semibold" onclick="sortTable('bl')">BL</th>
+                            <th class="sortable px-3 py-3 text-center font-semibold" onclick="sortTable('diasBl')">Dias BL</th>
                             <th class="sortable px-3 py-3 text-center font-semibold" onclick="sortTable('prazoPagamento')">Prazo Pgto</th>
                             <th class="sortable px-3 py-3 text-center font-semibold" onclick="sortTable('dataPgtoRealizado')">Data Pgto Realizado</th>
                             <th class="sortable px-3 py-3 text-center font-semibold" onclick="sortTable('dataNumerario')">Data Numerário</th>
@@ -562,6 +531,10 @@
                         <i class="fas fa-dollar-sign"></i> Pagamento
                     </h3>
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Dias BL</label>
+                            <input type="number" id="diasBl" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm" placeholder="Dias para Pgto" oninput="updateCalculatedPrazo()">
+                        </div>
                         <div>
                             <label class="block text-xs font-medium text-gray-700 mb-1">Prazo Pagamento</label>
                             <input type="date" id="prazoPagamento" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm">
@@ -1011,7 +984,7 @@
         function exportDataForBackup() {
             const headers = ['Fornecedor', 'Invoice', 'BCS', 'Montreal', 'Situação', 'Peso', 'G.W', 'Rolls', 'Valor',
                 '1st ETD', 'ETD', 'Dif. ETD', '1st ETA', 'ETA', 'Dif. ETA', 'TT', 'Tracking', 'Freetime',
-                'Navio', 'Transbordo', 'Owner', 'Frete', 'Container', 'BL', 'Prazo Pagamento',
+                'Navio', 'Transbordo', 'Owner', 'Frete', 'Container', 'BL', 'Dias BL', 'Prazo Pagamento',
                 'Data Pgto Realizado', 'Data Numerário', 'Valor Num.', 'Data Pgto', 'Subida',
                 'Valor Real', 'Diferença', 'Filial', 'NF', 'Contabilidade', 'Proporção'];
 
@@ -1040,6 +1013,7 @@
                 r.frete || '',
                 r.container || '',
                 r.bl || '',
+                r.diasBl || '0',
                 r.prazoPagamento || '',
                 r.dataPgtoRealizado || '',
                 r.dataNumerario || '',
@@ -1275,6 +1249,7 @@
                     <td class="px-3 py-2 text-right">${formatCurrency(record.frete)}</td>
                     <td class="px-3 py-2 font-mono text-xs">${record.container || '-'}</td>
                     <td class="px-3 py-2 font-mono text-xs">${record.bl || '-'}</td>
+                    <td class="px-3 py-2 text-center">${record.diasBl || '0'}</td>
                     <td class="px-3 py-2 text-center ${paymentClass}" title="${paymentTitle}">${formatDate(record.prazoPagamento)}</td>
                     <td class="px-3 py-2 text-center">${formatDate(record.dataPgtoRealizado)}</td>
                     <td class="px-3 py-2 text-center">${formatDate(record.dataNumerario)}</td>
@@ -1308,7 +1283,7 @@
                     
                     const fields = ['fornecedor', 'invoice', 'bcs', 'montreal', 'situacao', 'peso', 'gw', 'rolls', 'valor',
                         'firstEtd', 'etd', 'firstEta', 'eta', 'tracking', 'freetime', 'navio', 'transbordo', 'owner', 'frete',
-                        'container', 'bl', 'prazoPagamento', 'dataPgtoRealizado', 'dataNumerario', 'valorNumerario',
+                        'container', 'bl', 'diasBl', 'prazoPagamento', 'dataPgtoRealizado', 'dataNumerario', 'valorNumerario',
                         'dataPgto', 'subida', 'valorReal', 'diferenca', 'filial', 'nf', 'contabilidade', 'proporcao'];
                     
                     fields.forEach(field => {
@@ -1331,6 +1306,22 @@
             modal.classList.add('hidden');
             modal.classList.remove('flex');
         }
+
+        // Auto calculate prazo
+        function updateCalculatedPrazo() {
+            const etd = document.getElementById('etd').value;
+            const diasBl = parseInt(document.getElementById('diasBl').value);
+            const prazoInput = document.getElementById('prazoPagamento');
+
+            if (etd && !isNaN(diasBl)) {
+                const date = new Date(etd + 'T00:00:00');
+                date.setDate(date.getDate() + diasBl);
+                prazoInput.value = date.toISOString().split('T')[0];
+            }
+        }
+
+        // Add listener to ETD as well
+        document.getElementById('etd').addEventListener('change', updateCalculatedPrazo);
 
         // Form submission
         document.getElementById('containerForm').addEventListener('submit', async function(e) {
@@ -1360,6 +1351,7 @@
                 frete: document.getElementById('frete').value,
                 container: document.getElementById('container').value.toUpperCase(),
                 bl: document.getElementById('bl').value,
+                diasBl: parseInt(document.getElementById('diasBl').value) || 0,
                 prazoPagamento: normalizeDateToYYYYMMDD(document.getElementById('prazoPagamento').value),
                 dataPgtoRealizado: normalizeDateToYYYYMMDD(document.getElementById('dataPgtoRealizado').value),
                 dataNumerario: normalizeDateToYYYYMMDD(document.getElementById('dataNumerario').value),
@@ -1638,6 +1630,7 @@
                 'FRETE': 'frete',
                 'CONTAINER': 'container',
                 'BL': 'bl',
+                'DIAS BL': 'diasBl',
                 'PRAZO PAGAMENTO': 'prazoPagamento',
                 'PRAZO PGTO': 'prazoPagamento',
                 'DATA PGTO REALIZADO': 'dataPgtoRealizado',
@@ -1666,7 +1659,7 @@
             const header = headerRaw.map(h => normHeader(h));
 
             const dateFields = new Set(['firstEtd', 'etd', 'firstEta', 'eta', 'tracking', 'prazoPagamento', 'dataPgtoRealizado', 'dataNumerario', 'dataPgto', 'subida']);
-            const numberFields = new Set(['peso', 'gw', 'rolls', 'valor', 'freetime', 'frete', 'valorNumerario', 'valorReal', 'diferenca', 'proporcao']);
+            const numberFields = new Set(['peso', 'gw', 'rolls', 'valor', 'freetime', 'frete', 'valorNumerario', 'valorReal', 'diferenca', 'proporcao', 'diasBl']);
 
             if (replaceExisting) {
                 records = [];
@@ -1702,6 +1695,17 @@
 
                     record[fieldName] = value;
                 });
+
+                // Auto-calcula prazo de pagamento se vazio mas tiver ETD e Dias BL
+                if (!record.prazoPagamento && record.etd && record.diasBl) {
+                    try {
+                        const date = new Date(record.etd + 'T00:00:00');
+                        if (!isNaN(date.getTime())) {
+                            date.setDate(date.getDate() + parseInt(record.diasBl));
+                            record.prazoPagamento = date.toISOString().split('T')[0];
+                        }
+                    } catch (e) {}
+                }
 
                 if (record.fornecedor || record.invoice || record.bl || record.container) {
                     records.push(record);
@@ -1901,7 +1905,7 @@
 
             const headers = ['Fornecedor', 'Invoice', 'BCS', 'Montreal', 'Situação', 'Peso', 'G.W', 'Rolls', 'Valor',
                 '1st ETD', 'ETD', 'Dif. ETD', '1st ETA', 'ETA', 'Dif. ETA', 'TT', 'Tracking', 'Freetime',
-                'Navio', 'Transbordo', 'Owner', 'Frete', 'Container', 'BL', 'Prazo Pagamento',
+                'Navio', 'Transbordo', 'Owner', 'Frete', 'Container', 'BL', 'Dias BL', 'Prazo Pagamento',
                 'Data Pgto Realizado', 'Data Numerário', 'Valor Num.', 'Data Pgto', 'Subida',
                 'Valor Real', 'Diferença', 'Filial', 'NF', 'Contabilidade', 'Proporção'];
 
@@ -1930,6 +1934,7 @@
                 r.frete || '',
                 r.container || '',
                 r.bl || '',
+                r.diasBl || '0',
                 r.prazoPagamento || '',
                 r.dataPgtoRealizado || '',
                 r.dataNumerario || '',
