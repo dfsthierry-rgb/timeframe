@@ -39,35 +39,30 @@
             background-color: #1f2937; /* bg-gray-800 */
             box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4);
         }
-        /* Colunas Fixas Horizontais */
-        #dataTable th:nth-child(1),
-        #dataTable td:nth-child(1) {
+        /* Colunas Fixas Horizontais (Congeladas até Peso) */
+        #dataTable th:nth-child(1), #dataTable td:nth-child(1) { position: sticky; left: 0; z-index: 20; min-width: 75px; width: 75px; }
+        #dataTable th:nth-child(2), #dataTable td:nth-child(2) { position: sticky; left: 75px; z-index: 20; min-width: 150px; width: 150px; }
+        #dataTable th:nth-child(3), #dataTable td:nth-child(3) { position: sticky; left: 225px; z-index: 20; min-width: 130px; width: 130px; }
+        #dataTable th:nth-child(4), #dataTable td:nth-child(4) { position: sticky; left: 355px; z-index: 20; min-width: 120px; width: 120px; }
+        #dataTable th:nth-child(5), #dataTable td:nth-child(5) { position: sticky; left: 475px; z-index: 20; min-width: 120px; width: 120px; }
+        #dataTable th:nth-child(6), #dataTable td:nth-child(6) { position: sticky; left: 595px; z-index: 20; min-width: 130px; width: 130px; }
+        #dataTable th:nth-child(7), #dataTable td:nth-child(7) {
             position: sticky;
-            left: 0;
+            left: 725px;
             z-index: 20;
-            min-width: 75px;
-            width: 75px;
+            min-width: 100px;
+            width: 100px;
+            border-right: 3px solid #d1d5db; /* Borda mais forte para indicar separação */
         }
-        #dataTable th:nth-child(2),
-        #dataTable td:nth-child(2) {
-            position: sticky;
-            left: 75px;
-            z-index: 20;
-            min-width: 150px;
-            width: 150px;
-            border-right: 2px solid #e5e7eb;
-        }
-        #dataTable thead th:nth-child(1),
-        #dataTable thead th:nth-child(2) {
+
+        #dataTable thead th:nth-child(-n+7) {
             z-index: 40;
             background-color: #1f2937;
         }
-        #dataTable tbody td:nth-child(1),
-        #dataTable tbody td:nth-child(2) {
+        #dataTable tbody td:nth-child(-n+7) {
             background-color: #ffffff;
         }
-        #dataTable tr:hover td:nth-child(1),
-        #dataTable tr:hover td:nth-child(2) {
+        #dataTable tr:hover td:nth-child(-n+7) {
             background-color: #f9fafb;
         }
 
@@ -246,6 +241,11 @@
                             <button class="dropdown-item" onclick="importData(); closeActionsMenu();">
                                 <i class="fas fa-file-import text-purple-600"></i>
                                 Importar Dados
+                            </button>
+                            <div class="dropdown-divider"></div>
+                            <button class="dropdown-item" onclick="openSupplierParamsModal(); closeActionsMenu();">
+                                <i class="fas fa-calendar-check text-blue-600"></i>
+                                Configurar Prazos
                             </button>
                             <div class="dropdown-divider"></div>
                             <button class="dropdown-item danger" onclick="openClearModal(); closeActionsMenu();">
@@ -819,6 +819,49 @@
         </div>
     </div>
 
+    <!-- Supplier Params Modal -->
+    <div id="supplierParamsModal" class="fixed inset-0 bg-black/50 modal-overlay hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl fade-in">
+            <div class="p-4 border-b border-gray-200 flex items-center justify-between">
+                <h2 class="text-xl font-bold text-gray-800">Configurar Prazos por Fornecedor</h2>
+                <button onclick="closeSupplierParamsModal()" class="text-gray-400 hover:text-gray-600 text-2xl">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-900 mb-4">
+                    <p>Defina o número de dias para cada fornecedor. Esse valor será somado ao <strong>ETD</strong> para calcular o <strong>Prazo de Pagamento</strong> automaticamente quando este estiver vazio.</p>
+                </div>
+
+                <div class="max-height-[50vh] overflow-y-auto mb-4 border border-gray-100 rounded-lg">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50 sticky top-0">
+                            <tr>
+                                <th class="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase">Fornecedor</th>
+                                <th class="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase w-32">Dias</th>
+                                <th class="px-4 py-2 text-center text-xs font-bold text-gray-500 uppercase w-20">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="supplierParamsBody" class="divide-y divide-gray-100">
+                            <!-- JS populated -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-3 justify-between items-center pt-4 border-t">
+                    <button type="button" onclick="applyParamsToExisting()" class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition text-sm">
+                        <i class="fas fa-magic mr-2"></i>Aplicar aos registros vazios
+                    </button>
+                    <div class="flex gap-3">
+                        <button type="button" onclick="closeSupplierParamsModal()" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+                            Fechar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- SheetJS Library -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 
@@ -1337,9 +1380,18 @@
             e.preventDefault();
 
             const recordId = document.getElementById('recordId').value;
+            let calculatedPrazo = normalizeDateToYYYYMMDD(document.getElementById('prazoPagamento').value);
+            const supplier = document.getElementById('fornecedor').value;
+            const etd = normalizeDateToYYYYMMDD(document.getElementById('etd').value);
+
+            // Auto-calcula se vazio
+            if (!calculatedPrazo && etd && supplier) {
+                calculatedPrazo = calculatePaymentDate(etd, supplier) || '';
+            }
+
             const recordData = {
                 id: recordId || Date.now().toString(),
-                fornecedor: document.getElementById('fornecedor').value,
+                fornecedor: supplier,
                 invoice: document.getElementById('invoice').value,
                 bcs: document.getElementById('bcs').value,
                 montreal: document.getElementById('montreal').value,
@@ -1349,7 +1401,7 @@
                 rolls: document.getElementById('rolls').value,
                 valor: document.getElementById('valor').value,
                 firstEtd: normalizeDateToYYYYMMDD(document.getElementById('firstEtd').value),
-                etd: normalizeDateToYYYYMMDD(document.getElementById('etd').value),
+                etd: etd,
                 firstEta: normalizeDateToYYYYMMDD(document.getElementById('firstEta').value),
                 eta: normalizeDateToYYYYMMDD(document.getElementById('eta').value),
                 tracking: normalizeDateToYYYYMMDD(document.getElementById('tracking').value),
@@ -1360,7 +1412,7 @@
                 frete: document.getElementById('frete').value,
                 container: document.getElementById('container').value.toUpperCase(),
                 bl: document.getElementById('bl').value,
-                prazoPagamento: normalizeDateToYYYYMMDD(document.getElementById('prazoPagamento').value),
+                prazoPagamento: calculatedPrazo,
                 dataPgtoRealizado: normalizeDateToYYYYMMDD(document.getElementById('dataPgtoRealizado').value),
                 dataNumerario: normalizeDateToYYYYMMDD(document.getElementById('dataNumerario').value),
                 valorNumerario: document.getElementById('valorNumerario').value,
@@ -1703,6 +1755,12 @@
                     record[fieldName] = value;
                 });
 
+                // Auto-calcula prazo de pagamento se vazio
+                if (!record.prazoPagamento && record.etd && record.fornecedor) {
+                    const calc = calculatePaymentDate(record.etd, record.fornecedor);
+                    if (calc) record.prazoPagamento = calc;
+                }
+
                 if (record.fornecedor || record.invoice || record.bl || record.container) {
                     records.push(record);
                     imported++;
@@ -1990,6 +2048,103 @@
         document.getElementById('importModal').addEventListener('click', function(e) {
             if (e.target === this) closeImportModal();
         });
+
+        // ========== CONFIGURAÇÃO DE PRAZOS POR FORNECEDOR ==========
+        let supplierDays = JSON.parse(localStorage.getItem('supplierDays')) || {};
+
+        function openSupplierParamsModal() {
+            const modal = document.getElementById('supplierParamsModal');
+            renderSupplierParams();
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeSupplierParamsModal() {
+            const modal = document.getElementById('supplierParamsModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function renderSupplierParams() {
+            const tbody = document.getElementById('supplierParamsBody');
+            const suppliersInRecords = [...new Set(records.map(r => r.fornecedor).filter(Boolean))].sort();
+
+            // Garantir que fornecedores configurados mas não presentes nos registros apareçam
+            const allSuppliers = [...new Set([...suppliersInRecords, ...Object.keys(supplierDays)])].sort();
+
+            if (allSuppliers.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="px-4 py-8 text-center text-gray-400">Nenhum fornecedor encontrado</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = allSuppliers.map(s => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-2 font-medium text-gray-700">${s}</td>
+                    <td class="px-4 py-2">
+                        <input type="number" value="${supplierDays[s] || ''}"
+                            onchange="updateSupplierDay('${s}', this.value)"
+                            placeholder="Dias"
+                            class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 outline-none text-sm">
+                    </td>
+                    <td class="px-4 py-2 text-center">
+                        <button onclick="removeSupplierParam('${s}')" class="text-red-500 hover:text-red-700 p-1">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function updateSupplierDay(supplier, days) {
+            if (days === '' || days === null) {
+                delete supplierDays[supplier];
+            } else {
+                supplierDays[supplier] = parseInt(days);
+            }
+            localStorage.setItem('supplierDays', JSON.stringify(supplierDays));
+        }
+
+        function removeSupplierParam(supplier) {
+            delete supplierDays[supplier];
+            localStorage.setItem('supplierDays', JSON.stringify(supplierDays));
+            renderSupplierParams();
+        }
+
+        function calculatePaymentDate(etd, supplier) {
+            if (!etd || !supplier || !supplierDays[supplier]) return null;
+
+            try {
+                const date = new Date(normalizeDateToYYYYMMDD(etd) + 'T00:00:00');
+                if (isNaN(date.getTime())) return null;
+
+                date.setDate(date.getDate() + supplierDays[supplier]);
+                return date.toISOString().split('T')[0];
+            } catch (e) {
+                return null;
+            }
+        }
+
+        async function applyParamsToExisting() {
+            let updatedCount = 0;
+            records = records.map(r => {
+                if (!r.prazoPagamento && r.etd && r.fornecedor && supplierDays[r.fornecedor]) {
+                    const newDate = calculatePaymentDate(r.etd, r.fornecedor);
+                    if (newDate) {
+                        updatedCount++;
+                        return { ...r, prazoPagamento: newDate, updatedAt: new Date().toISOString() };
+                    }
+                }
+                return r;
+            });
+
+            if (updatedCount > 0) {
+                await saveData();
+                renderTable();
+                alert(`${updatedCount} prazos de pagamento foram calculados e atualizados.`);
+            } else {
+                alert('Nenhum registro pendente foi encontrado para os fornecedores configurados.');
+            }
+        }
 
         // Initial render
         loadRecordsFromSheets();
