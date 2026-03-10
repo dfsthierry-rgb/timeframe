@@ -39,6 +39,32 @@
             background-color: #1f2937; /* bg-gray-800 */
             box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4);
         }
+        /* Colunas Fixas Horizontais (Congeladas até Situação) */
+        #dataTable th:nth-child(1), #dataTable td:nth-child(1) { position: sticky; left: 0; z-index: 20; min-width: 75px; width: 75px; }
+        #dataTable th:nth-child(2), #dataTable td:nth-child(2) { position: sticky; left: 75px; z-index: 20; min-width: 150px; width: 150px; }
+        #dataTable th:nth-child(3), #dataTable td:nth-child(3) { position: sticky; left: 225px; z-index: 20; min-width: 130px; width: 130px; }
+        #dataTable th:nth-child(4), #dataTable td:nth-child(4) { position: sticky; left: 355px; z-index: 20; min-width: 130px; width: 130px; }
+        #dataTable th:nth-child(5), #dataTable td:nth-child(5) { position: sticky; left: 485px; z-index: 20; min-width: 130px; width: 130px; }
+        #dataTable th:nth-child(6), #dataTable td:nth-child(6) {
+            position: sticky;
+            left: 615px;
+            z-index: 20;
+            min-width: 135px;
+            width: 135px;
+            border-right: 3px solid #d1d5db;
+        }
+
+        #dataTable thead th:nth-child(-n+6) {
+            z-index: 40;
+            background-color: #1f2937;
+        }
+        #dataTable tbody td:nth-child(-n+6) {
+            background-color: #ffffff;
+        }
+        #dataTable tr:hover td:nth-child(-n+6) {
+            background-color: #f9fafb;
+        }
+
         /* Altura máxima para a tabela com rolagem */
         .table-container {
             max-height: 70vh; /* Ocupa 70% da altura da tela */
