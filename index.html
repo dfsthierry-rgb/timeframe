@@ -1225,18 +1225,26 @@
             let paymentClass = "";
             let paymentTitle = "";
             
-            if (record.prazoPagamento && !record.dataPgtoRealizado) {
-                const today = new Date();
-                today.setHours(0,0,0,0);
-                const dueDate = new Date(normalizeDateToYYYYMMDD(record.prazoPagamento) + 'T00:00:00');
-                const diffDays = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+            if (record.prazoPagamento) {
+                if (record.dataPgtoRealizado) {
+                    paymentClass = "text-black font-bold";
+                    paymentTitle = "PAGAMENTO REALIZADO";
+                } else {
+                    const today = new Date();
+                    today.setHours(0,0,0,0);
+                    const dueDate = new Date(normalizeDateToYYYYMMDD(record.prazoPagamento) + 'T00:00:00');
+                    const diffDays = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
 
-                if (diffDays < 0) {
-                    paymentClass = "payment-warning font-bold";
-                    paymentTitle = "PAGAMENTO ATRASADO";
-                } else if (diffDays <= 5) {
-                    paymentClass = "payment-near font-bold";
-                    paymentTitle = "PAGAMENTO PRÓXIMO";
+                    if (diffDays < 0) {
+                        paymentClass = "payment-warning font-bold";
+                        paymentTitle = "PAGAMENTO ATRASADO";
+                    } else if (diffDays <= 5) {
+                        paymentClass = "payment-near font-bold";
+                        paymentTitle = "PAGAMENTO PRÓXIMO";
+                    } else {
+                        paymentClass = "text-blue-600 font-bold";
+                        paymentTitle = "PAGAMENTO AGUARDANDO";
+                    }
                 }
             }
 
